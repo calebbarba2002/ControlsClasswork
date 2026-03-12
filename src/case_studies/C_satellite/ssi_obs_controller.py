@@ -1,0 +1,125 @@
+# 3rd-party
+import numpy as np
+import control as cnt
+
+# local (controlbook)
+from . import params as P
+from ..common import ControllerBase
+
+
+class SatelliteSSIOController(ControllerBase):
+    def __init__(self, separate_integrator=False):
+        # tuning parameters
+        tr_theta = 2.0
+        zeta_theta = 0.9
+        M = 3  # time separation factor between inner and outer loop
+        tr_phi = tr_theta * M
+        zeta_phi = 0.9
+        integrator_pole = [-1.0]
+
+        # augmented system
+        A1 = np.block([[P.A, np.zeros((4, 1))], [-P.Cr, np.zeros(1)]])
+        B1 = np.vstack((P.B, 0))
+
+        # check controllability
+        if np.linalg.matrix_rank(cnt.ctrb(A1, B1)) != 5:
+            raise ValueError("System not controllable")
+
+        # compute gains
+        wn_theta = 0.5 * np.pi / (tr_theta * np.sqrt(1 - zeta_theta**2))
+        theta_char_poly = [1, 2 * zeta_theta * wn_theta, wn_theta**2]
+        theta_poles = np.roots(theta_char_poly)
+
+        wn_phi = 0.5 * np.pi / (tr_phi * np.sqrt(1 - zeta_phi**2))
+        phi_char_poly = [1, 2 * zeta_phi * wn_phi, wn_phi**2]
+        phi_poles = np.roots(phi_char_poly)
+
+        des_poles = np.hstack([theta_poles, phi_poles, integrator_pole])
+
+        self.K1 = cnt.place(A1, B1, des_poles)
+        self.K = self.K1[:, :4]
+        self.ki = self.K1[:, 4:]
+
+        # linearization point
+        self.x_eq = P.x_eq
+        self.r_eq = P.Cr @ self.x_eq
+        self.u_eq = P.u_eq
+
+        # integrator variables
+        self.error_prev = 0.0
+        self.error_integral = 0.0
+        self.separate_integrator = separate_integrator
+
+        ####### OBSERVER DESIGN ########
+        # observer tuning parameters
+        M_obs = 10.0  # time scale separation between controller and observer
+        tr_theta_obs = tr_theta / M_obs
+        zeta_theta_obs = 0.9
+        tr_phi_obs = tr_phi / M_obs
+        phieta_phi_obs = 0.9
+
+        # check observability
+        if np.linalg.matrix_rank(cnt.ctrb(P.A.T, P.Cm.T)) != 4:
+            raise ValueError("System not observable")
+
+        # compute observer gain matrix
+        wn_theta_obs = 2.2 / tr_theta_obs
+        theta_obs_char_poly = [1, 2 * zeta_theta_obs * wn_theta_obs, wn_theta_obs**2]
+        theta_obs_poles = np.roots(theta_obs_char_poly)
+
+        wn_phi_obs = 2.2 / tr_phi_obs
+        phi_obs_char_poly = [1, 2 * phieta_phi_obs * wn_phi_obs, wn_phi_obs**2]
+        phi_obs_poles = np.roots(phi_obs_char_poly)
+
+        obs_poles = np.hstack((theta_obs_poles, phi_obs_poles))
+        self.L = cnt.place(P.A.T, P.Cm.T, obs_poles).T
+        print("L^T:", self.L.T)
+
+        # observer variables
+        self.xhat_tilde = np.zeros(4)
+        self.u_prev = np.zeros(1)
+
+    def update_with_measurement(self, r, y):
+        # update the observer with the measurement
+        xhat = self.observer_rk4_step(y)
+
+        x_tilde = xhat - self.x_eq
+        r_tilde = r - self.r_eq
+
+        # integrate error
+        error = r - P.Cr @ xhat  # can also use tilde vars (eq subtracts out)
+        self.error_integral += P.ts * (error + self.error_prev) / 2
+        self.error_prev = error
+
+        # compute feedback control
+        if self.separate_integrator:
+            u_tilde = -self.K @ x_tilde - self.ki @ self.error_integral
+        else:
+            x1_tilde = np.hstack((x_tilde, self.error_integral))
+            u_tilde = -self.K1 @ x1_tilde
+
+        # convert back to original variables
+        u_unsat = u_tilde + self.u_eq
+        u = self.saturate(u_unsat, u_max=P.torque_max)
+
+        # save the previous control input for the observer
+        self.u_prev = u
+
+        return u, xhat
+
+    def observer_f(self, xhat, y):
+        y_error = y - P.Cm @ xhat  # can also use tilde vars (eq subtracts out)
+        xhat_tilde = xhat - self.x_eq
+        u_tilde = self.u_prev - self.u_eq
+        xhat_dot = P.A @ xhat_tilde + P.B @ u_tilde + self.L @ y_error
+        return xhat_dot
+
+    def observer_rk4_step(self, y):
+        k1 = self.observer_f(self.xhat_tilde, y)
+        k2 = self.observer_f(self.xhat_tilde + P.ts / 2 * k1, y)
+        k3 = self.observer_f(self.xhat_tilde + P.ts / 2 * k2, y)
+        k4 = self.observer_f(self.xhat_tilde + P.ts * k3, y)
+        xhat_tilde_dot = (k1 + 2 * k2 + 2 * k3 + k4) / 6
+        self.xhat_tilde += xhat_tilde_dot * P.ts
+        xhat = self.xhat_tilde + self.x_eq
+        return xhat

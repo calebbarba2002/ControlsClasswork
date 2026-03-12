@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "case_studies"
+version = "0.0.0"
+description = "Code for control book case studies and homework"
+dependencies = [
+  # controls
+  "numpy",
+  "control",
+  "sympy",
+
+  # visualization
+  "matplotlib",
+  "abracatabra",
+  "pyqtgraph",
+  "pyopengl",
+  "PySide6",
+  
+  # to run interactive sessions
+  "ipython",
+  "ipykernel",
+
+  # code formatter
+  "black",
+]
+requires-python = ">=3.10"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/case_studies"]
+only-packages = true
+
+
+[tool.black]
+# Can make smaller if needed to make code snippets in textbook more readable
+line-length = 88  # default is 88
+required-version = "25.12.0"
+extend-exclude = 'eom_generated.py'  # exclude sympy generated files

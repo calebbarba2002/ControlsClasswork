@@ -1,0 +1,60 @@
+{
+    // ===========================================================================
+    // PEDAGOGICAL SETTINGS - Configured to promote student learning
+    // ===========================================================================
+    // These settings limit AI assistance to encourage students to think through
+    // problems rather than relying on auto-completion for complete solutions.
+    // GitHub Copilot Settings
+    // ---------------------------------------------------------------------------
+    "github.copilot.enable": {
+        "*": true,
+        "yaml": false,
+        "plaintext": false
+    },
+    // Copilot Chat settings to encourage learning
+    "github.copilot.chat.codeGeneration.instructions": [
+        {
+            "text": "For student assignments (hw* directories), provide guidance and hints rather than complete solutions. Ask clarifying questions about their understanding first."
+        },
+        {
+            "text": "For TODO markers in student code, suggest the next logical step or provide a 1-2 line hint, not a complete implementation."
+        },
+        {
+            "text": "When students ask to 'complete this file' or 'solve this problem', respond with 'I can help you work through this step-by-step. What part are you working on?' instead of providing the complete solution."
+        },
+        {
+            "text": "Point students to reference implementations (A_arm, B_pendulum, C_satellite) and templates rather than writing code for them."
+        }
+    ],
+    // Python Settings
+    // ---------------------------------------------------------------------------
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    // Editor Settings
+    // ---------------------------------------------------------------------------
+    "problems.showCurrentInStatus": true,
+    "editor.parameterHints.enabled": true,
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": false
+    },
+    // Format on save to teach good code style
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    // Jupyter Notebook Settings
+    // ---------------------------------------------------------------------------
+    "jupyter.askForKernelRestart": true,
+    "notebook.formatOnSave.enabled": true,
+    "notebook.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    }
+}
