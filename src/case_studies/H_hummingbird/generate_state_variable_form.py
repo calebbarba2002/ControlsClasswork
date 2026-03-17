@@ -28,6 +28,10 @@ su.enable_printing(__name__ == "__main__")
 # and "qdot"
 # K =
 
+# BEGIN SOLUTION
+K = 1.0 / 2.0 * qdot.T @ M @ qdot  # calculate the kinetic energy
+# END SOLUTION
+
 # then make sure to grab just the scalar part of the result
 K = K[0, 0]
 
@@ -37,11 +41,24 @@ K = K[0, 0]
 # of motion.
 
 
+# BEGIN SOLUTION
+g, beta, d, f_l, f_r, ell_T, km = sp.symbols("g beta d f_l f_r ell_T k_m")
+# END SOLUTION
+
 # TODO now calculate the potential energy "P"
-# P = 
+# P =
+
+# BEGIN SOLUTION
+P = m1 * g * ell_1 * sp.sin(theta) + m2 * g * ell_2 * sp.sin(theta) + m3 * g * ell_3z
+
+# This method would also work:
+# gravity is negative because z-axis in figure 2-3 of the lab manual points down
+# g_vec = sp.Matrix([0, 0, -g])
+# P = m1 * g_vec.T @ p1_in_w + m2 * g_vec.T @ p2_in_w + m3 * g_vec.T @ p3_in_w
+# P = P[0, 0]
+# END SOLUTION
 
 su.printeq("P", P)
-
 
 
 # %% [markdown]
@@ -51,6 +68,45 @@ su.printeq("P", P)
 # TODO: now calculate and define tau
 # tau = sp.Matrix([])
 
+# BEGIN SOLUTION
+# Method 1: copy tau directly from the lab manual
+tau = sp.Matrix(
+    [
+        d * (f_l - f_r),
+        ell_T * (f_l + f_r) * sp.cos(phi),
+        ell_T * (f_l + f_r) * sp.cos(theta) * sp.sin(phi)
+        - d * (f_l - f_r) * sp.sin(theta),
+    ]
+)
+
+# %%
+# Method 2: derive tau manually using virtual work
+
+# Define position vector from origin to where rotor forces act in body frame
+r_fl_in_b = sp.Matrix([ell_T, -d, 0])
+r_fr_in_b = sp.Matrix([ell_T, d, 0])
+
+# Express position vectors in world/inertial frame so they become functions of q
+# R1 was calculated in generate_KE.py and is the rotation from body to world frame
+r_fl_in_w = R1 @ r_fl_in_b
+r_fr_in_w = R1 @ r_fr_in_b
+
+# Define rotor forces in body frame (they act purely in z direction)
+fl_in_b = sp.Matrix([0, 0, -f_l])
+fr_in_b = sp.Matrix([0, 0, -f_r])
+
+# Express rotor forces in world/inertial frame
+fl_in_w = R1 @ fl_in_b
+fr_in_w = R1 @ fr_in_b
+
+# Now we can find tau by doing the dot product of each applied force (fl and fr)
+# in the direction of each generalized coordinate (d r_f)/(d q[i])
+tau = sp.zeros(3, 1)
+for i in range(len(q)):
+    tau_i = fl_in_w.T @ r_fl_in_w.diff(q[i]) + fr_in_w.T @ r_fr_in_w.diff(q[i])
+    tau_i = sp.trigsimp(tau_i[0])
+    tau[i] = tau_i
+# END SOLUTION
 
 # Group terms together for readability (this is to help with checking the result
 # but is not strictly necessary)
@@ -68,6 +124,9 @@ su.printeq("tau", tau)
 # TODO: calculate Mdot and verify with lab manual
 # Mdot = 
 
+# BEGIN SOLUTION
+Mdot = M.diff(t)
+# END SOLUTION
 
 #%%[markdown]
 # The following symbolic manipulations are just to make Mdot match the lab manual
@@ -123,10 +182,19 @@ Mdot[2, 2] = Mdot33  # replace with simplified version
 #dM_dphi = 
 #dM_dphi = sp.simplify(dM_dphi)
 
+# BEGIN SOLUTION
+dM_dphi = M.diff(phi)
+dM_dphi = sp.simplify(dM_dphi)
+# END SOLUTION
+
 su.printeq("dM/dϕ", dM_dphi)
 
 # %%
 # dM_dtheta =
+
+# BEGIN SOLUTION
+dM_dtheta = M.diff(theta)
+# END SOLUTION
 
 # substitute N33 just for printing to match the lab manual
 N33 = dM_dtheta[2, 2]
@@ -144,6 +212,10 @@ dM_dtheta[2, 2] = N33
 # %%
 # dM_dpsi =
 
+# BEGIN SOLUTION
+dM_dpsi = M.diff(psi)
+# END SOLUTION
+
 su.printeq("dM/dψ", dM_dpsi)
 
 
@@ -154,6 +226,10 @@ su.printeq("dM/dψ", dM_dpsi)
 # intermediate terms may be helpful, but calculate C -> 
 # C = 
 
+# BEGIN SOLUTION
+qdot_Mdiff = sp.Matrix([qdot.T @ dM_dphi, qdot.T @ dM_dtheta, qdot.T @ dM_dpsi])
+C = Mdot @ qdot - half * qdot_Mdiff @ qdot
+# END SOLUTION
 
 # can print C directly, but it is very long
 # su.printeq("C", C)
@@ -162,6 +238,10 @@ su.printeq("dM/dψ", dM_dpsi)
 # ### Partial Derivative of Potential Energy (dP/dq):
 # %%
 # dP_dq = 
+
+# BEGIN SOLUTION
+dP_dq = P.diff(q)
+# END SOLUTION
 
 su.printeq("dP/dq", dP_dq)
 
@@ -250,4 +330,22 @@ if __name__ == "__main__":
 
 
 
-    
+    # BEGIN SOLUTION
+    # %%
+    # These are all efforts to find q_ddot directly, instead of finding M, C, etc. They are not necessary for the lab, but I may
+    # build on them in the future.
+
+    # L = sp.simplify(K - P)
+
+    # RHS = tau - beta*sp.eye(3,3)@qdot  # we aren't given any friction coefficients, so we'll leave this friction out for now.
+    # LHS = sp.simplify(L.diff(qdot).diff(t) - L.diff(q)) # calculate the left hand side of the equations of motion
+
+    # q_ddot = qdot.diff(t)
+    # eom_total = LHS-RHS
+    # M_qddot = -1*eom_total.subs([(q_ddot[0], 0), (q_ddot[1], 0), (q_ddot[2], 0)])
+
+    # all three of these are viable options to find q_dd directly, the first two are much, much faster to compute
+    # result2 = M.LUsolve(sp.simplify(M@q_ddot - eom_total)) # calculate the acceleration of the system
+    # result = M.LUsolve(sp.simplify(M_qddot)) # calculate the acceleration of the system
+    # q_ddot_eom = M.inv()@(M@q_ddot - eom_total) # calculate the acceleration of the system
+    # END SOLUTION

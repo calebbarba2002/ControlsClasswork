@@ -1,5 +1,6 @@
 # 3rd-party
 import numpy as np
+
 # local (controlbook)
 from ..common.dynamics_base import DynamicsBase
 from . import params as P
@@ -26,5 +27,5 @@ class MassDynamics(DynamicsBase):
         return xdot
 
     def h(self):
-        y = self.state[:,1]
+        y = self.state[:1]
         return y

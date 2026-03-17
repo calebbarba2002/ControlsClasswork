@@ -10,6 +10,7 @@
 
 # %%
 # 3rd-party
+from matplotlib.pylab import f
 import sympy as sp
 
 # local (controlbook)
@@ -24,102 +25,103 @@ enable_printing(__name__ == "__main__")
 # %%
 
 # Defining necessary symbols and variables to use in the calculations e.g. t, ell_1, m1, J1x, phi, theta, psi, etc.
-# TODO define all necessary symbols
-
-# TODO Define time-varying symbols for generalized coordinates and their derivatives
+t, ell1, ell2, ell3_x, ell3_y, ell3_z, ell_T, d, m1, J1_x, J1_y, J1_z, m2, J2_x, J2_y, J2_z, m3, J3_x, J3_y, J3_z = sp.symbols('t, ell1, ell2, ell3_x, ell3_y, ell3_z, ell_T, d, m1, J1_x, J1_y, J1_z, m2, J2_x, J2_y, J2_z, m3, J3_x, J3_y, J3_z')
 
 
+# Define time-varying symbols for generalized coordinates and their derivatives 
+phi, theta, psi = dynamicsymbols('phi, theta, psi')
 
 
 # %% [markdown]
 # ### Linear Velocity Terms
 # %%
-# TODO define the position of each mass in body frame, then rotate
+# define the position of each mass in body frame, then rotate
 # it into the world or inertial frame.
-# p1_in_b =
-# p1_in_w =
+p1_in_b = sp.Matrix([[ell1], [0], [0]])
+p1_in_w = rotz(psi) @ roty(theta) @ rotx(phi) @ p1_in_b
 
-# p2_in_2 =
-# p2_in_w =
+p2_in_2 = sp.Matrix([[ell2], [0], [0]])
+p2_in_w = rotz(psi) @ roty(theta) @ p2_in_2
 
-# p3_in_1 =
-# p3_in_w =
+p3_in_1 = sp.Matrix([[ell3_x], [ell3_y], [ell3_z]])
+p3_in_w = rotz(psi) @ p3_in_1
 
 
 # %%
-# TODO: take the time derivative of the position vectors to get the linear velocity,
+# take the time derivative of the position vectors to get the linear velocity,
 # then use the "find_coeffs" function to calculate the "V_i" matrices
 
-# v1_in_w =
-# V1 =
+v1_in_w = sp.diff(p1_in_w, t)
+V1 = find_coeffs(v1_in_w, sp.Matrix([phi.diff(t), theta.diff(t), psi.diff(t)]))
 
-# v2_in_w =
-# V2 =
+v2_in_w = sp.diff(p2_in_w, t)
+V2 = find_coeffs(v2_in_w, sp.Matrix([phi.diff(t), theta.diff(t), psi.diff(t)]))
 
-# v3_in_w =
-# V3 =
+v3_in_w = sp.diff(p3_in_w, t)
+V3 = find_coeffs(v3_in_w, sp.Matrix([phi.diff(t), theta.diff(t), psi.diff(t)]))
 
-# printeq("v_1", v1_in_w)
-# printeq("v_2", v2_in_w)
-# printeq("v_3", v3_in_w)
+printeq("v_1", v1_in_w)
+printeq("v_2", v2_in_w)
+printeq("v_3", v3_in_w)
 
-# printeq("V_1", V1)
-# printeq("V_2", V2)
-# printeq("V_3", V3)
+printeq("V_1", V1)
+printeq("V_2", V2)
+printeq("V_3", V3)
 
 
 
 # now calculate the rotation matrices for each rigid body
-# TODO use the "rotx", "roty", and "rotz" functions to calculate the rotation matrices
+# use the "rotx", "roty", and "rotz" functions to calculate the rotation matrices
 # for each rigid body
-# R1 =  #rotation to body 1
-# R2 =  #rotation to body 2
-# R3 =  #rotation to body 3
+R1 = rotz(psi) @ roty(theta) @ rotx(phi) #rotation to body 1
+R2 = rotz(psi) @ roty(theta) #rotation to body 2
+R3 = rotz(psi)  #rotation to body 3
 
 
 
 # we can use the rotation matrices to calculate the angular velocity of each rigid body
-# TODO use the "calc_omega" function to calculate the angular velocity of each rigid body
+# use the "calc_omega" function to calculate the angular velocity of each rigid body
 
-# omega_1 =
-# omega_2 =
-# omega_3 =
+omega_1 = calc_omega(R1)
+omega_2 = calc_omega(R2)
+omega_3 = calc_omega(R3)
 
 # Simplify the angular velocities
-# omega_1 = sp.simplify(omega_1)
-# omega_2 = sp.simplify(omega_2)
-# omega_3 = sp.simplify(omega_3)
+omega_1 = sp.simplify(omega_1)
+omega_2 = sp.simplify(omega_2)
+omega_3 = sp.simplify(omega_3)
 
 
-# TODO use the "find_coeffs" function to calculate the "W_i" matrices
-# W1 =
-# W2 =
-# W3 =
+#  use the "find_coeffs" function to calculate the "W_i" matrices
+W1 = find_coeffs(omega_1, sp.Matrix([phi.diff(t), theta.diff(t), psi.diff(t)]))
+W2 = find_coeffs(omega_2, sp.Matrix([phi.diff(t), theta.diff(t), psi.diff(t)]))
+W3 = find_coeffs(omega_3, sp.Matrix([phi.diff(t), theta.diff(t), psi.diff(t)]))
 
-# printeq("omega_1", omega_1)
-# printeq("omega_2", omega_2)
-# printeq("omega_3", omega_3)
+printeq("omega_1", omega_1)
+printeq("omega_2", omega_2)
+printeq("omega_3", omega_3)
 
-# printeq("W_1", W1)
-# printeq("W_2", W2)
-# printeq("W_3", W3)
+printeq("W_1", W1)
+printeq("W_2", W2)
+printeq("W_3", W3)
 
 # %% [markdown]
 # ### Inertia Tensor Terms
 # %%
-# TODO: create the diagonal inertia tensors for each rigid body using inertia symbols
+# create the diagonal inertia tensors for each rigid body using inertia symbols
 
-# J1 = 
-# J2 = 
-# J3 = 
-
+J1 = sp.diag(J1_x, J1_y, J1_z)
+J2 = sp.diag(J2_x, J2_y, J2_z)
+J3 = sp.diag(J3_x, J3_y, J3_z)
 
 # %% [markdown]
 # ### Generalized Mass/Inertia Matrix
 # %%
-# TODO: calculate M using the masses and the V, W, R, and J matrices
+# calculate M using the masses and the V, W, R, and J matrices
 M = sp.zeros(3, 3)
-# M = M +
+M = M + m1 * V1.T @ V1 + W1.T @ R1 @ J1 @ R1.T @ W1
+M = M + m2 * V2.T @ V2 + W2.T @ R2 @ J2 @ R2.T @ W2
+M = M + m3 * V3.T @ V3 + W3.T @ R3 @ J3 @ R3.T @ W3
 
 
 
@@ -161,13 +163,16 @@ printeq("M_33", M33)
 
 # %% [markdown]
 # # Calculate Kinetic Energy
-# None of the following is required by the lab, but it helps you see how we 
+# None of the following is required by the lab, but it helps you see how 
 # we can formulate M, and use it to calculate Kinetic Energy.
 # %%
 # Define 1/2 as a rational number to avoid floating point issues
 half = sp.Rational(1, 2)
+qdot = sp.Matrix([[phi.diff(t)], [theta.diff(t)], [psi.diff(t)]])  # generalized velocity vector
 K = half * qdot.T @ M @ qdot  # calculate the kinetic energy
 K = K[0, 0]  # make K a scalar instead of a 1x1 matrix
 
 # substitute long terms for readability
 printeq("K", sp.simplify(K.subs(long_terms)))
+
+# %%

@@ -1,22 +1,38 @@
 import numpy as np
+# BEGIN SOLUTION
+##### Chapter 2
+# Physical parameters
+m = 5.0 # mass (kg)
+k = 3.0 # spring constant (kg/s^2)
+b = 0.5 # damping coefficient (kg/s)
 
-# physical parameters of the system
-m = 5.0     # mass (kg)
-k = 3.0     # spring constant (N/m)
-b = 0.5     # damping coefficient (N s/m)
+##### Chapter 3
+# Initial conditions
+z0 = 0.0 # initial position (m)
+zdot0 = 0.0 # initial velocity (m/s)
 
-# simulation parameters
-ts = 0.01   # simulation timestep
-Ts = ts 
+# Simulation parameters
+t0 = 0.0 # start time
+tf = 50.0 # end time
+ts = 0.01 # integration time step
 
-# initial conditions
-z0 = 0.0
-zdot0 = 0.0
+##### Chapter 4
+# Linearization/equilibrium point
+x_eq = np.zeros(2)
+u_eq = np.zeros(1)
 
-# actuator limits
-force_max = 5.0 #N
+##### Chapter 5
+# Transfer function numerator and denominator
+tf_num = [1 / m]
+tf_den = [1, b / m, k / m]
 
-# transfer function of the plant
-# G(s) = 1 / (m s^2 + b s + k)
-tf_num = np.array([1.0 / m])
-tf_den = np.array([1.0, b / m, k / m])
+##### Chapter 6 / 11 # TODO: decide which chapter to put this in
+# State space
+A = np.array([[0, 1], [-k / m, -b / m]])
+B = np.array([[0], [1 / m]])
+Cm = np.eye(1, 2) # measure z
+Cr = Cm
+D = np.zeros((1, 1))
+
+##### Chapter 8
+force_max = 6.0 # max force (N)
