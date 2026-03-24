@@ -53,8 +53,9 @@ J_eq = J2y + m1 * ell1**2 + m2 * ell2**2
 b_theta = ellT / J_eq
 
 # PD gains
-kp_theta = wn_theta**2 / b_theta
-kd_theta = 2 * zeta_theta * wn_theta / b_theta
+kp_theta = 0.22    # was ~0.145
+kd_theta = 0.15    # was ~0.093
+
 
 print(f"{kp_theta = :.3f}, {kd_theta = :.3f}")
 
@@ -65,8 +66,9 @@ tr_phi = 0.25
 zeta_phi = 0.707
 wn_phi = 2.2 / tr_phi
 
-kp_phi = wn_phi**2 * J1x
-kd_phi = 2 * zeta_phi * wn_phi * J1x
+kp_phi = 0.030      # was ~0.01464
+kd_phi = 0.008     # was ~0.00235
+
 
 # Yaw loop (outer)
 M = 8
@@ -77,8 +79,10 @@ wn_psi = 2.2 / tr_psi
 # yaw dynamics coefficient
 b_psi = ellT / (m1 * ell1 + m2 * ell2)
 
-kp_psi = wn_psi**2 / b_psi
-kd_psi = 2 * zeta_psi * wn_psi / b_psi
+kp_psi = 0.16      # was ~0.02895
+kd_psi = 0.17      # was ~0.04210
+
+
 
 print(f"{kp_phi = :.5f}, {kd_phi = :.5f}")
 print(f"{kp_psi = :.5f}, {kd_psi = :.5f}")

@@ -1,58 +1,43 @@
-# local (controlbook)
-from case_studies import common, H_hummingbird
-from case_studies.H_hummingbird.full_pd_controller import FullPDController
 import numpy as np
 
-# create system
-hummingbird = H_hummingbird.Dynamics()
+from case_studies import common, H_hummingbird
+from case_studies.H_hummingbird import params as P
+from case_studies.H_hummingbird.dynamics import HummingbirdDynamics
+from case_studies.H_hummingbird.full_pd_controller import FullPDController
 
-# controller
+
+hummingbird = HummingbirdDynamics()
 controller = FullPDController()
 
-# =========================
-# REFERENCE SIGNALS
-# =========================
+x_hist = [hummingbird.state]
+u_hist = []
+r_hist = []
 
-# YAW reference
-psi_ref = common.SignalGenerator(
-    amplitude=np.radians(30),   # 30 deg yaw motion
-    frequency=0.05,
-    y_offset=0.0
-)
+time = np.arange(start=0.0, stop=40.0, step=P.ts, dtype=np.float64)
+for t in time[1:]:
 
-# keep pitch stable
-theta_ref = common.SignalGenerator(
-    amplitude=0.0,
-    frequency=0.01,
-    y_offset=0.0
-)
+    theta_ref = 0.0
+    psi_ref = np.deg2rad(30.0) * np.sign(np.sin(2.0 * np.pi * 0.05 * t))
+    r = np.array([theta_ref, psi_ref])
 
-# roll is not directly commanded
-phi_ref = common.SignalGenerator(amplitude=0.0)
+    u = controller.update_with_measurement(r, hummingbird.state[0:3])
 
-# references: [phi, theta, psi]
-refs = [
-    phi_ref,
-    theta_ref,
-    psi_ref
-]
+    F = u[0]
+    tau = u[1]
 
-# =========================
-# RUN SIM
-# =========================
+    motor_forces = P.mixer @ np.array([F, tau])
+    pwm = motor_forces / hummingbird.km
 
-time, x_hist, u_hist, r_hist, *_ = common.run_simulation(
-    hummingbird,
-    refs,
-    controller,
-    controller_input="measurement",   # ✅ using measurement version
-    t_final=30,
-    dt=H_hummingbird.params.ts
-)
+    y = hummingbird.update(pwm)
 
-# =========================
-# VISUALIZATION
-# =========================
+    x_hist.append(hummingbird.state)
+    u_hist.append(pwm)
+    r_hist.append(r)
+
+x_hist = np.array(x_hist)
+u_hist = np.array(u_hist)
+r_hist = np.array(r_hist)
 
 viz = H_hummingbird.Visualizer(time, x_hist, u_hist)
 viz.animate()
+viz.plot()
