@@ -26,28 +26,28 @@ class BlockbeamDynamics(DynamicsBase):
         # Here, we'll call the generated function, but show the direct implementation
         # commented out below.
 
-        xdot = eom_generated.calculate_eom(
-            x,
-            u,
-            m1=self.m1,
-            m2=self.m2,
-            ell=self.length,
-            g=self.g,
-        )
+        #xdot = eom_generated.calculate_eom(
+        #    x,
+        #    u,
+        #    m1=self.m1,
+        #    m2=self.m2,
+        #    ell=self.length,
+        #    g=self.g,
+        #)
 
-        # z, theta, zdot, thetadot = x
-        # F = u[0]
+        z, theta, zdot, thetadot = x
+        F = u[0]
 
-        # torque = F * self.length * np.cos(theta)
-        # friction = 2 * self.m1 * z * zdot * thetadot
-        # block_moment = self.m1 * self.g * z * np.cos(theta)
-        # beam_moment = self.m2 * self.g * 0.5 * self.length * np.cos(theta)
-        # inertia = self.m2 * self.length**2 / 3 + self.m1 * z**2
+        torque = F * self.length * np.cos(theta)
+        friction = 2 * self.m1 * z * zdot * thetadot
+        block_moment = self.m1 * self.g * z * np.cos(theta)
+        beam_moment = self.m2 * self.g * 0.5 * self.length * np.cos(theta)
+        inertia = self.m2 * self.length**2 / 3 + self.m1 * z**2
 
-        # zddot = z * thetadot**2 - self.g * np.sin(theta)
-        # thetaddot = (torque - friction - block_moment - beam_moment) / inertia
+        zddot = z * thetadot**2 - self.g * np.sin(theta)
+        thetaddot = (torque - friction - block_moment - beam_moment) / inertia
 
-        # xdot = np.array([zdot, thetadot, zddot, thetaddot])
+        xdot = np.array([zdot, thetadot, zddot, thetaddot])
 
         return xdot
 

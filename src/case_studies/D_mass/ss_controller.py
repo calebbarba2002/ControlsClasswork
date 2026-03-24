@@ -7,7 +7,7 @@ from ..common import ControllerBase
 from ..control import utils_design
 from ..control.state_space_control import StateSpaceController
 
-class MassSSController(ControllerBase):
+class MassSSController(ControllerBase): #updated with integral so SSI controleler
     def __init__(self):
         # controller design parameters
         tr_z = 2.0
