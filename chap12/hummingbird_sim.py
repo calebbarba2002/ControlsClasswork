@@ -18,6 +18,7 @@ for t in time[1:]:
 
     theta_ref = 0.0
     psi_ref = np.deg2rad(30.0) * np.sign(np.sin(2.0 * np.pi * 0.05 * t))
+    # psi_ref = np.deg2rad(30.0) * (t*0+1)
     r = np.array([theta_ref, psi_ref])
 
     u = controller.update_with_measurement(r, hummingbird.state[0:3])
@@ -40,4 +41,28 @@ r_hist = np.array(r_hist)
 
 viz = H_hummingbird.Visualizer(time, x_hist, u_hist)
 viz.animate()
-viz.plot()
+# viz.plot()
+
+# 3rd-party
+# import numpy as np
+
+# # local (controlbook)
+# from case_studies import H_hummingbird, common
+
+
+# hummingbird = H_hummingbird.Dynamics()
+# controller = H_hummingbird.ControllerPD()
+# theta_ref = common.SignalGenerator(amplitude=np.radians(30), frequency=0.1)
+# psi_ref = common.SignalGenerator(amplitude=np.radians(30), frequency=0.1) # yaw not controlled in this example
+
+# time, x_hist, u_hist, r_hist, *_ = common.run_simulation(
+#     hummingbird,
+#     [None, theta_ref, psi_ref],  # roll needs a placeholder for visualization
+#     controller,
+#     controller_input="measurement",
+#     t_final=20,
+#     dt=H_hummingbird.params.ts,  # TODO: decide if ts should be a param or always use 0.01
+# )
+
+# viz = H_hummingbird.Visualizer(time, x_hist, u_hist, r_hist)
+# viz.animate()

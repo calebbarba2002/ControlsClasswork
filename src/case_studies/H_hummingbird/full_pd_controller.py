@@ -56,3 +56,27 @@ class FullPDController(ControllerBase):
 
         return np.array([F, tau])
 
+
+    def update_with_state(self, r, x):
+        phi = x[0]
+        theta = x[1]
+        psi = x[2]
+        phidot = x[3]
+        thetadot = x[4]
+        psidot = x[5]
+
+        theta_ref = r[0]
+        psi_ref = r[1]
+
+        theta_error = theta_ref - theta
+        F_tilde = self.kp_theta * theta_error - self.kd_theta * thetadot
+        F_fl = self.Fe * np.cos(theta)
+        F = F_fl + F_tilde
+
+        psi_error = psi_ref - psi
+        phi_ref = self.kp_psi * psi_error - self.kd_psi * psidot
+
+        phi_error = phi_ref - phi
+        tau = self.kp_phi * phi_error - self.kd_phi * phidot
+
+        return np.array([F, tau])
