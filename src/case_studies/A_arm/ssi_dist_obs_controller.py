@@ -91,7 +91,8 @@ class ArmSSIDOController(ControllerBase):
         # convert back to original variables (for feedback linearization)
         theta = xhat[0]
         u_fl = P.m * P.g * P.ell / 2 * np.cos(theta)
-        u_unsat = u_tilde + u_fl
+        # subtract disturbance estimate to actively compensate for disturbances
+        u_unsat = u_tilde + u_fl - dhat
         u = self.saturate(u_unsat, u_max=P.tau_max)
 
         # save the previous control input for the observer

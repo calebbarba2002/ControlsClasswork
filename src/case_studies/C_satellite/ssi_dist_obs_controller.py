@@ -107,7 +107,8 @@ class SatelliteSSIDOController(ControllerBase):
             u_tilde = -self.K1 @ x1_tilde
 
         # convert back to original variables
-        u_unsat = u_tilde + self.u_eq
+        # subtract disturbance estimate to actively compensate for disturbances
+        u_unsat = u_tilde + self.u_eq - dhat
         u = self.saturate(u_unsat, u_max=P.torque_max)
 
         # save the previous control input for the observer

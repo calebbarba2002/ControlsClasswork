@@ -107,8 +107,9 @@ class CartPendulumSSIDOController(ControllerBase):
             x1_tilde = np.hstack((x_tilde, self.error_integral))
             u_tilde = -self.K1 @ x1_tilde
 
-        # convert back to original variables
-        u_unsat = u_tilde + self.u_eq
+        # convert back to original variables AND
+        # subtract disturbance estimate to actively compensate for disturbances
+        u_unsat = u_tilde + self.u_eq - dhat
         u = self.saturate(u_unsat, u_max=P.force_max)
 
         # save the previous control input for the observer
