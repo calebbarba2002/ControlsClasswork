@@ -1,3 +1,29 @@
+# # 3rd-party
+# import numpy as np
+
+# # local (controlbook)
+# from case_studies import H_hummingbird, common
+
+
+# hummingbird = H_hummingbird.Dynamics()
+# controller = H_hummingbird.ControllerLonPD()
+# theta_ref = common.SignalGenerator(amplitude=np.radians(30), frequency=0.1)
+# psi_ref = None  # yaw not controlled in this example
+
+# time, x_hist, u_hist, r_hist, *_ = common.run_simulation(
+#     hummingbird,
+#     [None, theta_ref, psi_ref],  # roll needs a placeholder for visualization
+#     controller,
+#     controller_input="measurement",
+#     t_final=20,
+#     dt=H_hummingbird.params.ts,  # TODO: decide if ts should be a param or always use 0.01
+# )
+
+# viz = H_hummingbird.Visualizer(time, x_hist, u_hist, r_hist)
+# viz.animate()
+
+
+
 # local (controlbook)
 from case_studies import common, H_hummingbird
 from case_studies.H_hummingbird.longitudinal_pd_controller import LongitudinalPDController

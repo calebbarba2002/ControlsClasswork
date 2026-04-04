@@ -43,6 +43,8 @@ viz = H_hummingbird.Visualizer(time, x_hist, u_hist)
 viz.animate()
 # viz.plot()
 
+
+#preferred way to run this is with the sim script template below
 # 3rd-party
 # import numpy as np
 
