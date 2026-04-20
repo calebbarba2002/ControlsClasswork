@@ -11,9 +11,9 @@ class RodMassSSIDOController(ControllerBase):
     def __init__(self):
 
         # =========================================
-        # CONTROLLER (same as before)
+        # CONTROLLER DESIGN
         # =========================================
-        tr = 0.5
+        tr = 0.15
         zeta = 0.9
         integrator_pole = -10.0
 
@@ -28,28 +28,29 @@ class RodMassSSIDOController(ControllerBase):
         des_poles = np.hstack([poles, integrator_pole])
 
         K1 = cnt.place(A1, B1, des_poles)
-        self.K = K1[:, :2]
-        self.ki = K1[:, 2]
+        self.K = K1[:, :2].flatten()       # force to 1D (2,)
+        self.ki = float(K1[0, 2])          # index specific element instead of slicing
 
         # =========================================
         # OBSERVER
         # =========================================
-        obs_poles = 5 * poles   # 5x faster
+        obs_poles = 5 * poles
         self.L = cnt.place(P.A.T, P.Cm.T, obs_poles).T
 
         # =========================================
-        # DISTURBANCE OBSERVER
+        # DISTURBANCE OBSERVER (AUGMENTED)
         # =========================================
-        self.p_dist = -1.0
+        p_dist = -1.0
 
-        A2 = np.block([
-            [P.A, P.B],
-            [np.zeros((1,2)), self.p_dist]
+        self.A2 = np.block([
+            [P.A,              P.B                       ],
+            [np.zeros((1, 2)), np.array([[p_dist]])]
         ])
-        C2 = np.hstack([P.Cm, np.zeros((1,1))])
+        self.B2 = np.vstack([P.B, np.zeros((1, 1))])
+        C2 = np.hstack([P.Cm, np.zeros((1, 1))])
 
-        obs_poles2 = np.hstack([obs_poles, self.p_dist])
-        self.L2 = cnt.place(A2.T, C2.T, obs_poles2).T
+        obs_poles2 = np.hstack([obs_poles, p_dist])
+        self.L2 = cnt.place(self.A2.T, C2.T, obs_poles2).T
 
         print("L =", self.L)
         print("L2 =", self.L2)
@@ -57,33 +58,54 @@ class RodMassSSIDOController(ControllerBase):
         # =========================================
         # STATES
         # =========================================
-        self.xhat = np.zeros(2)
+        self.xhat = np.zeros(2)            # 1D (2,)
         self.dhat = 0.0
         self.integrator = 0.0
-        self.error_prev = 0.0
+        self.u_prev = 0.0                  # plain scalar
+
+        self.x_eq = P.x_eq.flatten()      # force 1D
+        self.u_eq = float(P.u_eq.item())   # .item() extracts scalar from any shape array
+        self.r_eq = float((P.Cr @ self.x_eq).item())
 
     def update_with_measurement(self, r, y):
 
         # =========================================
-        # OBSERVER UPDATE
+        # AUGMENTED OBSERVER UPDATE
         # =========================================
-        y_error = y - P.Cm @ self.xhat
-        xhat_dot = P.A @ self.xhat + P.B.flatten()*0 + self.L @ y_error
-        self.xhat += P.ts * xhat_dot
+        xhat_aug = np.append(self.xhat, self.dhat)   # 1D (3,)
+
+        y_error = y - P.Cm @ self.xhat               # innovation
+
+        xhat_aug += P.ts * (
+            self.A2 @ xhat_aug
+            + self.B2.flatten() * self.u_prev
+            + self.L2 @ y_error
+        ).flatten()
+
+        # Unpack updated estimates
+        self.xhat = xhat_aug[:2]
+        self.dhat = float(xhat_aug[2])
 
         # =========================================
-        # DISTURBANCE UPDATE
+        # TILDE VARIABLES
         # =========================================
-        self.dhat += P.ts * self.p_dist * (y - P.Cm @ self.xhat)
+        x_tilde = self.xhat - self.x_eq             # 1D (2,)
+        r_tilde = float(r.item()) - self.r_eq   # r is 1D (1,), so extract scalar with .item()
+        y_tilde = float((P.Cr @ x_tilde).item())
+
+
+        # =========================================
+        # INTEGRATOR
+        # =========================================
+        error = r_tilde - y_tilde
+        self.integrator += P.ts * error
 
         # =========================================
         # CONTROL LAW
         # =========================================
-        error = r - self.xhat[0]
-        self.integrator += P.ts * (error + self.error_prev)/2
-        self.error_prev = error
+        u_tilde = float((-self.K @ x_tilde).item()) - self.ki * self.integrator - self.dhat
+        u = u_tilde + self.u_eq
 
-        u = -self.K @ self.xhat - self.ki*self.integrator - self.dhat
+        self.u_prev = u
 
-        return u, self.xhat
-
+        return np.array([u]), self.xhat.copy()

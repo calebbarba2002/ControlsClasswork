@@ -11,14 +11,14 @@ class RodMassSSIController(ControllerBase):
     def __init__(self):
 
         # =========================================
-        # 1. DESIGN PARAMETERS (YOU CHANGE THESE)
+        # DESIGN PARAMETERS
         # =========================================
-        tr = 0.5        # rise time (faster → more aggressive)
-        zeta = 0.9      # damping
+        tr = 0.5
+        zeta = 0.9
         integrator_pole = -10.0
 
         # =========================================
-        # 2. AUGMENT SYSTEM (adds integrator)
+        # AUGMENTED SYSTEM
         # =========================================
         A1 = np.block([
             [P.A, np.zeros((2,1))],
@@ -27,19 +27,16 @@ class RodMassSSIController(ControllerBase):
         B1 = np.vstack((P.B, 0))
 
         # =========================================
-        # 3. DESIRED POLES
+        # DESIRED POLES
         # =========================================
         wn = 2.2 / tr
-        des_char_poly = [1, 2*zeta*wn, wn**2]
-        poles = np.roots(des_char_poly)
-
+        poles = np.roots([1, 2*zeta*wn, wn**2])
         des_poles = np.hstack([poles, integrator_pole])
 
         # =========================================
-        # 4. PLACE POLES → GET GAINS
+        # GAINS
         # =========================================
         K1 = cnt.place(A1, B1, des_poles)
-
         self.K = K1[:, :2]
         self.ki = K1[:, 2]
 
@@ -47,32 +44,34 @@ class RodMassSSIController(ControllerBase):
         print("ki =", self.ki)
 
         # =========================================
-        # 5. INTEGRATOR STATE
+        # STATES
         # =========================================
         self.integrator = 0.0
         self.error_prev = 0.0
 
         self.x_eq = P.x_eq
         self.u_eq = P.u_eq
-        self.r_eq = P.Cr @ self.x_eq   # reference equilibrium
-        self.integrator = 0.0
-
-
+        self.r_eq = P.Cr @ self.x_eq
 
     def update_with_state(self, r, x):
-        # state error
+
+        # =========================================
+        # TILDE VARIABLES
+        # =========================================
         x_tilde = x - self.x_eq
         r_tilde = r - self.r_eq
+        y_tilde = P.Cr @ x_tilde
 
-        # integrator
-        error = r - P.Cr @ x
+        # =========================================
+        # INTEGRATOR (CRITICAL FIX)
+        # =========================================
+        error = r_tilde - y_tilde
         self.integrator += P.ts * error
 
-        # control law
+        # =========================================
+        # CONTROL LAW
+        # =========================================
         u_tilde = -self.K @ x_tilde - self.ki * self.integrator
-
         u = u_tilde + self.u_eq
 
-        # CRITICAL: return ONLY u as 1D array
         return np.array([u.item()])
-
